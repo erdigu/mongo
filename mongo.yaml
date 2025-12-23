@@ -1,0 +1,41 @@
+# -------------------------------
+# MongoDB - Deployment
+# -------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: automotive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:6.0
+          ports:
+            - containerPort: 27017
+
+---
+# -------------------------------
+# MongoDB - Service (NodePort)
+# -------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: automotive
+spec:
+  type: NodePort
+  selector:
+    app: mongo
+  ports:
+    - port: 27017          # service port (inside cluster)
+      targetPort: 27017   # container port (Mongo)
+      nodePort: 30017     # port on your local machine
