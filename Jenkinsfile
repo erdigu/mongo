@@ -4,42 +4,72 @@ pipeline {
     environment {
         K8S_NAMESPACE = "automotive"
         MONGO_APP     = "mongo"
+        AWS_DEFAULT_REGION = "us-east-1"
     }
 
     stages {
 
         stage('Verify Namespace') {
             steps {
-                sh """
-                  kubectl get namespace ${K8S_NAMESPACE} \
-                  || kubectl create namespace ${K8S_NAMESPACE}
-                """
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds-4eks', // Your Jenkins AWS credentials
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    sh """
+                      aws eks update-kubeconfig --name automotive-cluster --region $AWS_DEFAULT_REGION
+                      kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}
+                    """
+                }
             }
         }
 
         stage('Deploy MongoDB') {
             steps {
-                sh """
-                  kubectl apply -f mongo.yaml
-                """
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds-4eks',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    sh """
+                      kubectl apply -f mongo.yaml
+                    """
+                }
             }
         }
 
         stage('Verify MongoDB Deployment') {
             steps {
-                sh """
-                  kubectl rollout status deployment/${MONGO_APP} -n ${K8S_NAMESPACE}
-                """
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds-4eks',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    sh """
+                      kubectl rollout status deployment/${MONGO_APP} -n ${K8S_NAMESPACE}
+                    """
+                }
             }
         }
 
         stage('Verify MongoDB Service') {
             steps {
-                sh """
-                  kubectl get svc ${MONGO_APP} -n ${K8S_NAMESPACE}
-                """
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds-4eks',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    sh """
+                      kubectl get svc ${MONGO_APP} -n ${K8S_NAMESPACE}
+                    """
+                }
             }
         }
+
     }
 
     post {
