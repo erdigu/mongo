@@ -1,2 +1,2 @@
 # mongo
-create mongo container through pipeline
+create mongo container on eks through pipeline
