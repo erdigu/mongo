@@ -28,8 +28,7 @@ pipeline {
         stage('Verify MongoDB Deployment') {
             steps {
                 sh """
-                  kubectl rollout status deployment/${MONGO_APP} \
-                  -n ${K8S_NAMESPACE}
+                  kubectl rollout status deployment/${MONGO_APP} -n ${K8S_NAMESPACE}
                 """
             }
         }
@@ -45,10 +44,42 @@ pipeline {
 
     post {
         success {
-            echo "✅ MongoDB deployed successfully in ${K8S_NAMESPACE} namespace"
+            emailext(
+                subject: "✅ SUCCESS: ${JOB_NAME} #${BUILD_NUMBER}",
+                mimeType: 'text/html',
+                body: """
+                    <h2 style="color:green;">MongoDB Deployment Successful 🎉</h2>
+                    <p><b>Namespace:</b> ${K8S_NAMESPACE}</p>
+                    <p><b>Application:</b> ${MONGO_APP}</p>
+                    <p><b>Job:</b> ${JOB_NAME}</p>
+                    <p><b>Build Number:</b> ${BUILD_NUMBER}</p>
+                    <p>
+                        <b>Build URL:</b>
+                        <a href="${BUILD_URL}">${BUILD_URL}</a>
+                    </p>
+                """,
+                to: "erdigvijaypatil01@gmail.com"
+            )
         }
+
         failure {
-            echo "❌ MongoDB deployment failed"
+            emailext(
+                subject: "❌ FAILURE: ${JOB_NAME} #${BUILD_NUMBER}",
+                mimeType: 'text/html',
+                body: """
+                    <h2 style="color:red;">MongoDB Deployment Failed ❌</h2>
+                    <p><b>Namespace:</b> ${K8S_NAMESPACE}</p>
+                    <p><b>Application:</b> ${MONGO_APP}</p>
+                    <p><b>Job:</b> ${JOB_NAME}</p>
+                    <p><b>Build Number:</b> ${BUILD_NUMBER}</p>
+                    <p>
+                        <b>Build URL:</b>
+                        <a href="${BUILD_URL}">${BUILD_URL}</a>
+                    </p>
+                    <p>Please check the Jenkins logs for more details.</p>
+                """,
+                to: "erdigvijaypatil01@gmail.com"
+            )
         }
     }
 }
